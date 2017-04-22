@@ -15,7 +15,7 @@ Add to `cargo.toml`
 [source, toml]
 ----
 [dependencies]
-pending...
+indentation_flattener = "0.1.0"
 ----
 
 See example below
