@@ -2,5 +2,12 @@
 name = "indentation_flattener"
 version = "0.1.0"
 authors = ["maiquel <jleahred@gmail.com>"]
+license = "GPL-3.0"
+description = "From indented input, generate plain output with indentation PUSH and POP codes."
+readme = "README.adoc"
+repository = "https://github.com/jleahred/indentation_flattener"
+keywords = ["indentation", "parsing", "tokenizer"]
+# documentation=
 
 [dependencies]
+
