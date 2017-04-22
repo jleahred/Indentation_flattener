@@ -3,7 +3,9 @@
 A small an simple library to transform text with indentations to
 a text with extra symbols "PushIndent" and "PopIndent"
 
-This project is based on [indent_tokenizer](https://github.com/jleahred/indent_tokenizer)
+This project is based on https://github.com/jleahred/indent_tokenizer[indent_tokenizer]
+
+This format is more convenient to use with peg grammars (as I will do)
 
 
 
@@ -22,7 +24,7 @@ See example below
 
 == Modifs
 
-pending...
+None
 
 
 == Indentation format
@@ -39,14 +41,15 @@ Let's see by example.
 ----
 .....
 ...
-    ....
+    ....        new ident level
+        ....    new ident level
         ....
-        ....
+    ....        one back indent level
     ....
-    ....
+        ....    new indent level
+....            two back indent level
 ....
-....
-    ....
+    ....        new indent level
 ----
 
 
@@ -54,20 +57,21 @@ Indentation groups can have any number of spaces
 
 .Valid indentation different spaces
 ----
-.....               level0
+.....
   ....              level1  <--
         ....        level2
   ....              level1  <--
-  ....              level1  <--
-....                level0
-....                level0
+  ....
+....
+....
       ....          level1  <--
+            ....    level2  <--
 ----
 
 It's not a good idea to have same level with different spaces, but it's
 allowed when you are creating a new level.
 
-In this example, last level1 is idented with more spaces than previus ones
+In this example, last level1 and last level2  are idented with more spaces than previus ones
 
 
 
@@ -103,16 +107,16 @@ As we saw in previous example, increasing level is free indentation.
 You can start lines with `|`, but it's optional.
 
 
-.Indentation indicator is optional
+.Start line indicator is optional
 ----
 .....
-    |.....
-     ......
+     |1234
+     1234
      ......
         ......
 ----
 
-Look that `|` is one position previous to indentation level.
+But if you combine lines with `|` and without on same level, columns will not match
 
 
 
@@ -122,9 +126,9 @@ It is usefull when you need to start with spaces.
 .I want to start a line with spaces
 ----
 .....
-    | .....     <- This line starts with an space
-    |  ......   <- Starting with 2 spaces
-    |.....      <- starts with no spaces
+     | .....     <- This line starts with an space
+     |  ......   <- Starting with 2 spaces
+     |.....      <- starts with no spaces
      .....      <- starting with no spaces
      ...        <- starting with no spaces
 ----
@@ -135,10 +139,18 @@ It is usefull when you need to start with spaces.
 .....
     ||.....     This line starts with a `|`
     |......     This one starts with `.`
+
+.....
+.....
+    ||.....     This line starts with a `|`
+    ......     This one starts with `.`
+
 ----
 
 
 A line is empty when there are no content or it only has spaces (no matter how many).
+
+Empty lines will produce new line `char` and no change of indentation level
 
 
 .Empty lines
@@ -162,28 +174,28 @@ What if I want represent empty lines?
 ----
 .....
     .....
-    .....
-    .....
-    .....     I want new line after this line
-   |
+    .....     There is a new line after (same indent level)
 
-    .....     and three new lines, please
-   |
-   |
-   |
-
+    .....
+    .....     There is a new line after (explicitly marked)
+    |
+    .....     three new lines after
+    |
+    |
+    |
+.....   Two new lines at end of document
+|
+|
 ----
 
-`|` is quite usefull if you need to represent empty lines at end of file.
-
-Empty lines will produce new line `char`
+`|` is quite usefull if you need to represent empty lines at end of document.
 
 
 What if I want to represent spaces at end of line?
 
 Spaces at end of line will not be erased, therefore, you don't need to do anything about it.
 
-But could be intesting to represent it because some editors can run trailing or
+But it could be intesting to represent it because some editors can run trailing or
 just because you can visualize it.
 
 
@@ -197,7 +209,7 @@ just because you can visualize it.
     and you know it
 
     Next line is properly indented and only has spaces
-   |   |
+    |   |
 
 ----
 
@@ -236,26 +248,24 @@ But I could need a pipe `|` at end of line
 ----
 
 
-.Pitfall
-----
-|.....
-.....   <- Invalid, remember, indentation mark | is previus to real indentation
-
-
-|.....
- .....   <- This is OK, but not elegant
-
-
-| ....   <- I want to start with an space
-|.....   <- This is redundant, but more clear
- 
-----
 
 
 == Output format
 
-pending...
+The output will be a string with codes PUSH_INDENT and POP_INDENT
 
+.From lib.rs
+[source, rust]
+----
+    const PUSH_INDENT: char = 0x02 as char;
+    const POP_INDENT: char = 0x03 as char;
+----
+
+Spaces to mark indentation, will be removed from output.
+
+See examples below.
+
+As the system works with lines, every existing line with content, will finish with `end of line`
 
 
 
@@ -263,19 +273,34 @@ pending...
 
 It works with concrete types vs general types (as String, u32 or usize)
 
+
+Constants::
+[source, rust]
+----
+const EOL: char = '\n';
+const PUSH_INDENT: char = 0x02 as char;
+const POP_INDENT: char = 0x03 as char;
+----
+
+
 Concrete types::
 [source, rust]
 ----
-pending...
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub struct LineNum(u32);
+
+#[derive(Debug, PartialEq, Clone, Eq)]
+pub struct SLine(String);
+
+#[derive(Debug, PartialEq, Clone, Eq, Default)]
+pub struct SFlattedText(String);
 ----
-
-
 
 
 Function to call::
 [source, rust]
 ----
-pending
+pub fn flatter(input: &str) -> Result<SFlattedText, Error>
 ----
 
 
@@ -305,17 +330,41 @@ You can look into tests.rs, there are several tests.
 .Simple example
 [source, rust]
 ----
-pending...
+# this input...
+
+0
+    01
+    02
+        020
+        021
+        023
+            0230
+            0231
+
+# produces...
+0
+\u{2}01
+02
+\u{2}020
+021
+023
+\u{2}0230
+0231
+\u{3}\u{3}\u{3}"
 ----
 
+As you can see, indentations has been removed by codes to mark PUSH_INDENT and POP_INDENT
+
+[NOTE]
+All lines are finished with new line. If last line has not a new line, the system will insert one
 
 
 .Complex example
 [source, rust]
 ----
-    let out = pending...("
+    let flat = flatter("
 0
-    || 01a
+     || 01a
      01b
      01c
 
@@ -330,25 +379,51 @@ pending...
 1a
 1b
     11a
-   ||11b
+    ||11b
     11c
 
     12a  ||
-   |12b  ||
+    |12b  ||
 2a
     21a
     21b
-   |
-   |
+    |
+    |
 
 ")
+        .unwrap();
+
+    assert!(flat ==
+            SFlattedText::from("
+0
+\u{2}| 01a
+01b
+01c
+
+02a
+02b
+
+\u{2}020a
+|020b
+
+  021a
+021b
+\u{3}\u{3}1a
+1b
+\u{2}11a
+|11b
+11c
+
+12a  |
+12b  |
+\u{3}2a
+\u{2}21a
+21b
+
+
+
+\u{3}"));
 ----
 
-The result will be 
+More examples on tests.rs
 
-[source, rust]
-----
-pending
-----
-
- 
