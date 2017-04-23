@@ -5,7 +5,9 @@ a text with extra symbols "PushIndent" and "PopIndent"
 
 This project is based on https://github.com/jleahred/indent_tokenizer[indent_tokenizer]
 
-This format is more convenient to use with peg grammars (as I will do)
+This format is more convenient to use with peg grammars (as I will do).
+I mean, processing an input with this library, will let you to deal with
+indentation on peg grammars.
 
 
 
